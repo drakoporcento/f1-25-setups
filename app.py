@@ -75,93 +75,112 @@ if menu != "Cadastrar Novo" and not df.empty:
     if "delete_clicked" not in st.session_state:
         st.session_state.delete_clicked = False
 
-    if st.button("🗑️ Excluir Setup"):
-        if not st.session_state.delete_clicked:
+    if st.session_state.delete_clicked:
+        st.warning("Tem certeza que deseja excluir este setup?")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Confirmar Exclusão"):
+                df = df[df["Nome do Setup"] != menu]
+                df.to_csv(SETUP_FILE, index=False)
+                fazer_backup()
+                st.session_state.delete_clicked = False
+                st.success("Setup excluído com sucesso.")
+                st.rerun()
+        with col2:
+            if st.button("❌ Cancelar"):
+                st.session_state.delete_clicked = False
+                st.rerun()
+    else:
+        if st.button("🗑️ Excluir Setup"):
             st.session_state.delete_clicked = True
-            st.experimental_rerun()
-        else:
-            st.warning("Tem certeza que deseja excluir este setup?")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Confirmar Exclusão"):
-                    df = df[df["Nome do Setup"] != menu]
-                    df.to_csv(SETUP_FILE, index=False)
-                    fazer_backup()
-                    st.session_state.delete_clicked = False
-                    st.success("Setup excluído com sucesso.")
-                    st.rerun()
-            with col2:
-                if st.button("❌ Cancelar"):
-                    st.session_state.delete_clicked = False
-                    st.experimental_rerun()
+            st.rerun()
 
-# Função para campos padrão
-def campos_comuns():
-    pista = st.selectbox("Escolha a pista", tracks)
-    clima = st.selectbox("Condição Climática", weather_options)
-    asa_dianteira = st.slider("Asa Dianteira", 1, 50, 25)
-    asa_traseira = st.slider("Asa Traseira", 1, 50, 25)
+# Edição ou cadastro de setups
+if menu:
+    if menu == "Cadastrar Novo":
+        st.header("Cadastrar Novo Setup")
+        setup_info = pd.DataFrame()
+    else:
+        st.header(f"Editar Setup: {menu}")
+        setup_info = df[df["Nome do Setup"] == menu]
+
+    def get_value(campo, padrao):
+        if not setup_info.empty and campo in setup_info.columns:
+            valor = setup_info.iloc[0][campo]
+            return valor if pd.notna(valor) else padrao
+        return padrao
+
+    nome_setup = st.text_input("Nome do Setup", value=menu if menu != "Cadastrar Novo" else "")
+    pista = st.selectbox("Escolha a pista", tracks, index=tracks.index(get_value("Pista", tracks[0])))
+    clima = st.selectbox("Condição Climática", weather_options, index=weather_options.index(get_value("Clima", weather_options[0])))
+
+    st.subheader("Aerodinâmica")
+    asa_dianteira = st.slider("Asa Dianteira", 1, 50, int(get_value("Asa Dianteira", 25)))
+    asa_traseira = st.slider("Asa Traseira", 1, 50, int(get_value("Asa Traseira", 25)))
 
     st.subheader("Transmissão")
-    diff_on = st.slider("Transmissão Diferencial Pedal On", 0, 100, 50, step=5)
-    diff_off = st.slider("Transmissão Diferencial Pedal Off", 0, 100, 50, step=5)
+    diff_on = st.slider("Transmissão Diferencial Pedal On", 0, 100, int(get_value("Transmissão Diferencial Pedal On", 50)), step=5)
+    diff_off = st.slider("Transmissão Diferencial Pedal Off", 0, 100, int(get_value("Transmissão Diferencial Pedal Off", 50)), step=5)
 
     st.subheader("Geometria da Suspensão")
-    camb_frontal = st.slider("Cambagem Frontal", -3.5, -2.5, -3.0)
-    camb_tras = st.slider("Cambagem Traseira", -2.0, -1.0, -1.5)
-    toe_diant = st.slider("Toe-out Dianteiro", 0.0, 0.2, 0.1)
-    toe_tras = st.slider("Toe-out Traseiro", 0.1, 0.25, 0.15)
+    camb_frontal = st.slider("Cambagem Frontal", -3.5, -2.5, float(get_value("Cambagem Frontal", -3.0)))
+    camb_tras = st.slider("Cambagem Traseira", -2.0, -1.0, float(get_value("Cambagem Traseira", -1.5)))
+    toe_diant = st.slider("Toe-out Dianteiro", 0.0, 0.2, float(get_value("Toe-Out Dianteiro", 0.1)))
+    toe_tras = st.slider("Toe-out Traseiro", 0.1, 0.25, float(get_value("Toe-Out Traseiro", 0.15)))
 
     st.subheader("Suspensão")
-    susp_diant = st.slider("Suspensão Frontal", 1, 41, 20)
-    susp_tras = st.slider("Suspensão Traseira", 1, 41, 20)
-    anti_roll_d = st.slider("Anti-Roll Dianteiro", 1, 21, 10)
-    anti_roll_t = st.slider("Anti-Roll Traseiro", 1, 21, 10)
-    altura_d = st.slider("Altura Frontal", 15, 35, 25)
-    altura_t = st.slider("Altura Traseira", 40, 60, 50)
+    susp_diant = st.slider("Suspensão Frontal", 1, 41, int(get_value("Suspensão Frontal", 20)))
+    susp_tras = st.slider("Suspensão Traseira", 1, 41, int(get_value("Suspensão Traseira", 20)))
+    anti_roll_d = st.slider("Anti-Roll Dianteiro", 1, 21, int(get_value("Anti-Roll Dianteiro", 10)))
+    anti_roll_t = st.slider("Anti-Roll Traseiro", 1, 21, int(get_value("Anti-Roll Traseiro", 10)))
+    altura_d = st.slider("Altura Frontal", 15, 35, int(get_value("Altura Frontal", 25)))
+    altura_t = st.slider("Altura Traseira", 40, 60, int(get_value("Altura Traseira", 50)))
 
     st.subheader("Freios")
-    bal_freio = st.slider("Balanceamento de Freios Dianteiro", 50, 70, 50, step=1)
+    bal_freio = st.slider("Balanceamento de Freios Dianteiro", 50, 70, int(get_value("Balanceamento De Freios Dianteiro", 50)), step=1)
     st.caption("Valores menores = mais freio dianteiro")
-    press_freio = st.slider("Pressão dos freios", 80, 100, 95)
+    press_freio = st.slider("Pressão dos freios", 80, 100, int(get_value("Pressão Dos Freios", 95)))
 
     st.subheader("Pneus")
-    press_dd = st.slider("Pressão Dianteiro Direito", 22.5, 29.5, 26.0)
-    press_de = st.slider("Pressão Dianteiro Esquerdo", 22.5, 29.5, 26.0)
-    press_td = st.slider("Pressão Traseiro Direito", 20.5, 26.5, 23.5)
-    press_te = st.slider("Pressão Traseiro Esquerdo", 20.5, 26.5, 23.5)
+    press_dd = st.slider("Pressão Dianteiro Direito", 22.5, 29.5, float(get_value("Pressão Dianteiro Direito", 26.0)))
+    press_de = st.slider("Pressão Dianteiro Esquerdo", 22.5, 29.5, float(get_value("Pressão Dianteiro Esquerdo", 26.0)))
+    press_td = st.slider("Pressão Traseiro Direito", 20.5, 26.5, float(get_value("Pressão Traseiro Direito", 23.5)))
+    press_te = st.slider("Pressão Traseiro Esquerdo", 20.5, 26.5, float(get_value("Pressão Traseiro Esquerdo", 23.5)))
 
-    return locals()
+    if st.button("📀 Salvar Alterações"):
+        novo_registro = {
+            "Nome do Setup": nome_setup,
+            "Pista": pista,
+            "Clima": clima,
+            "Asa Dianteira": asa_dianteira,
+            "Asa Traseira": asa_traseira,
+            "Transmissão Diferencial Pedal On": diff_on,
+            "Transmissão Diferencial Pedal Off": diff_off,
+            "Cambagem Frontal": camb_frontal,
+            "Cambagem Traseira": camb_tras,
+            "Toe-Out Dianteiro": toe_diant,
+            "Toe-Out Traseiro": toe_tras,
+            "Suspensão Frontal": susp_diant,
+            "Suspensão Traseira": susp_tras,
+            "Anti-Roll Dianteiro": anti_roll_d,
+            "Anti-Roll Traseiro": anti_roll_t,
+            "Altura Frontal": altura_d,
+            "Altura Traseira": altura_t,
+            "Balanceamento De Freios Dianteiro": bal_freio,
+            "Pressão Dos Freios": press_freio,
+            "Pressão Dianteiro Direito": press_dd,
+            "Pressão Dianteiro Esquerdo": press_de,
+            "Pressão Traseiro Direito": press_td,
+            "Pressão Traseiro Esquerdo": press_te,
+            "Última Atualização": hora_brasil()
+        }
 
-# Cadastro ou Edição do Setup
-if menu == "Cadastrar Novo":
-    st.header("Cadastrar Novo Setup")
-    nome_setup = st.text_input("Nome do Setup", key="novo_nome_setup")
-    valores = campos_comuns()
-else:
-    st.header(f"Editar Setup: {menu}")
-    nome_setup = menu
-    valores = campos_comuns()
-
-# Botão de salvar
-if st.button("💾 Salvar Alterações"):
-    if nome_setup:
-        novo_setup = {"Nome do Setup": nome_setup, "Última Atualização": hora_brasil()}
-        for k, v in valores.items():
-            if k != "nome_setup":
-                novo_setup[k.replace("_", " ").title()] = v
-
-        if menu == "Cadastrar Novo":
-            df = pd.concat([df, pd.DataFrame([novo_setup])], ignore_index=True)
-            st.success("Novo setup cadastrado com sucesso!")
+        if nome_setup in df["Nome do Setup"].values:
+            df.loc[df["Nome do Setup"] == nome_setup, novo_registro.keys()] = novo_registro.values()
         else:
-            index = df[df["Nome do Setup"] == nome_setup].index
-            for col in novo_setup:
-                df.loc[index, col] = novo_setup[col]
-            st.success("Setup atualizado com sucesso!")
+            df = pd.concat([df, pd.DataFrame([novo_registro])], ignore_index=True)
 
         df.to_csv(SETUP_FILE, index=False)
         fazer_backup()
-        st.stop()
-    else:
-        st.warning("⚠️ Por favor, insira um nome para o setup.")
+        st.success("Setup salvo com sucesso!")
+        st.rerun()
