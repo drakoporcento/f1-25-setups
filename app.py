@@ -1,9 +1,25 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime
+
+# CONFIGURAÇÕES DE ACESSO
+PASSWORD = "f1buscape"
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    senha = st.text_input("Digite a senha para acessar:", type="password")
+    if senha == PASSWORD:
+        st.session_state.authenticated = True
+        st.rerun()
+    else:
+        st.stop()
 
 # Caminho do arquivo CSV
 SETUP_FILE = 'setups_f1_25.csv'
+BACKUP_FOLDER = 'backups'
+os.makedirs(BACKUP_FOLDER, exist_ok=True)
 
 # Lista de pistas
 tracks = [
@@ -22,6 +38,7 @@ weather_options = ["Seco", "Chuva Intermediária", "Chuva Forte"]
 
 st.title("Setup F1 25 - Cadastro e Consulta")
 
+# Carregamento de dados
 if os.path.exists(SETUP_FILE):
     df = pd.read_csv(SETUP_FILE)
     setup_names = ["Cadastrar Novo"] + df["Nome do Setup"].dropna().unique().tolist() if "Nome do Setup" in df.columns else ["Cadastrar Novo"]
@@ -30,6 +47,20 @@ else:
     setup_names = ["Cadastrar Novo"]
 
 menu = st.sidebar.selectbox("Menu", setup_names)
+
+# Função de backup automático
+def fazer_backup():
+    if os.path.exists(SETUP_FILE):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = os.path.join(BACKUP_FOLDER, f"backup_{timestamp}.csv")
+        df.to_csv(backup_path, index=False)
+
+# Aqui continuaria a lógica para "Cadastrar Novo" e editar setups salvos
+# que você já tinha implementado (sliders, botões e lógica de salvamento/edição)
+# Pode seguir adicionando esse bloco a partir daqui
+
+# Exemplo de onde chamar o backup após salvar um novo setup ou alterar um existente:
+# fazer_backup()
 
 if menu == "Cadastrar Novo":
     st.header("Cadastrar novo setup")
