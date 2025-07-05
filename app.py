@@ -46,12 +46,15 @@ def hora_brasil():
 # Carregamento de dados
 if os.path.exists(SETUP_FILE):
     df = pd.read_csv(SETUP_FILE)
-    if "Última Atualização" not in df.columns:
-        df["Última Atualização"] = ""
-    if "Nome do Setup" not in df.columns:
-        df["Nome do Setup"] = ""
 else:
-    df = pd.DataFrame(columns=["Nome do Setup", "Última Atualização"])
+    df = pd.DataFrame(columns=[
+        "Nome do Setup", "Última Atualização", "Pista", "Clima", "Asa Dianteira", "Asa Traseira",
+        "Transmissão Diferencial Pedal On", "Transmissão Diferencial Pedal Off",
+        "Cambagem Frontal", "Cambagem Traseira", "Toe-Out Dianteiro", "Toe-Out Traseiro",
+        "Suspensão Frontal", "Suspensão Traseira", "Anti-Roll Dianteiro", "Anti-Roll Traseiro",
+        "Altura Frontal", "Altura Traseira", "Balanceamento De Freios Dianteiro", "Pressão Dos Freios",
+        "Pressão Dianteiro Direito", "Pressão Dianteiro Esquerdo", "Pressão Traseiro Direito", "Pressão Traseiro Esquerdo"
+    ])
 
 def fazer_backup():
     if os.path.exists(SETUP_FILE):
@@ -60,10 +63,10 @@ def fazer_backup():
         df.to_csv(backup_path, index=False)
 
 def get_value(coluna, padrao):
-    if "menu" in st.session_state and st.session_state.menu != "Cadastrar Novo" and coluna in df.columns and st.session_state.menu in df["Nome do Setup"].values:
-        valor = df.loc[df["Nome do Setup"] == st.session_state.menu, coluna].values
-        if len(valor) > 0:
-            return valor[0]
+    if "menu" in st.session_state and st.session_state.menu != "Cadastrar Novo":
+        row = df[(df["Nome do Setup"] == st.session_state.menu.split("__")[0]) & (df["Pista"] == st.session_state.menu.split("__")[1])]
+        if not row.empty and coluna in row.columns:
+            return row[coluna].values[0]
     return padrao
 
 # Botões de setup na sidebar
@@ -71,12 +74,8 @@ st.sidebar.title("Setups Salvos")
 
 # Ordenar pelo nome da pista
 df_sorted = df.copy()
-if "Pista" in df_sorted.columns:
-    df_sorted["Pista"] = df_sorted["Pista"].fillna("")
-    df_sorted = df_sorted.sort_values(by="Pista", key=lambda x: x.str.lower())
-else:
-    df_sorted["Pista"] = ""
-    df_sorted = df_sorted.sort_values(by="Nome do Setup", key=lambda x: x.str.lower())
+df_sorted["Pista"] = df_sorted["Pista"].fillna("")
+df_sorted = df_sorted.sort_values(by="Pista", key=lambda x: x.str.lower())
 
 if st.sidebar.button("➕ Cadastrar Novo Setup"):
     st.session_state.menu = "Cadastrar Novo"
@@ -93,12 +92,11 @@ for index, row in df_sorted.iterrows():
     clima_nome = " ".join(clima.split(" ")[:-1]) if clima else ""
 
     label = f"{flag} {circuit_name} | {clima_nome} {icon} | {setup}"
-    unique_key = f"{setup}_{pista}_{clima}"
+    unique_key = f"{setup}__{pista}"
 
     if st.sidebar.button(label, key=unique_key):
         st.session_state.menu = unique_key
         st.rerun()
-
 # Continuação do código (formulário, sliders, salvar, exclusão etc.)
 
 # Botão para baixar backup
