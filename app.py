@@ -21,26 +21,28 @@ SETUP_FILE = 'setups_f1_25.csv'
 BACKUP_FOLDER = 'backups'
 os.makedirs(BACKUP_FOLDER, exist_ok=True)
 
-# Lista de pistas
+# Lista de pistas com bandeiras
 tracks = [
-    "GP da Austrália, Melbourne", "GP da China, Xangai", "GP do Japão, Suzuka",
-    "GP do Bahrein, Sakhir", "GP da Arábia Saudita, Jeddah", "GP de Miami, EUA",
-    "GP da Emilia-Romagna, Ímola", "GP de Mônaco, Monte Carlo", "GP da Espanha, Barcelona",
-    "GP do Canadá, Montreal", "GP da Austria, Red-Bull Ring", "GP da Austria, Red-Bull Ring Invertido",
-    "GP da Inglaterra, Silverstone", "GP da Inglaterra, Silverstone Invertido", "GP da Bélgica, Spa-Francorchamps",
-    "GP da Hungria, Hungaroring", "GP da Holanda, Zandvoort", "GP da Holanda, Zandvoort Invertido",
-    "GP da Itália, Monza", "GP do Azerbaijão, Baku", "GP de Singapura, Marina Bay",
-    "GP dos Estados Unidos, Austin Texas", "GP do México, Cidade do México", "GP de São Paulo, Interlagos",
-    "GP de Las Vegas, Las Vegas", "GP do Catar, Lusail", "GP de Abu Dhabi, Yas Marina"
+    "🇦🇺 GP da Austrália, Melbourne", "🇨🇳 GP da China, Xangai", "🇯🇵 GP do Japão, Suzuka",
+    "🇧🇭 GP do Bahrein, Sakhir", "🇸🇦 GP da Arábia Saudita, Jeddah", "🇺🇸 GP de Miami, EUA",
+    "🇮🇹 GP da Emilia-Romagna, Ímola", "🇲🇨 GP de Mônaco, Monte Carlo", "🇪🇸 GP da Espanha, Barcelona",
+    "🇨🇦 GP do Canadá, Montreal", "🇦🇹 GP da Áustria, Red-Bull Ring", "🇦🇹 GP da Áustria, Red-Bull Ring Invertido",
+    "🇬🇧 GP da Inglaterra, Silverstone", "🇬🇧 GP da Inglaterra, Silverstone Invertido", "🇧🇪 GP da Bélgica, Spa-Francorchamps",
+    "🇭🇺 GP da Hungria, Hungaroring", "🇳🇱 GP da Holanda, Zandvoort", "🇳🇱 GP da Holanda, Zandvoort Invertido",
+    "🇮🇹 GP da Itália, Monza", "🇦🇿 GP do Azerbaijão, Baku", "🇸🇬 GP de Singapura, Marina Bay",
+    "🇺🇸 GP dos Estados Unidos, Austin Texas", "🇲🇽 GP do México, Cidade do México", "🇧🇷 GP de São Paulo, Interlagos",
+    "🇺🇸 GP de Las Vegas, Las Vegas", "🇶🇦 GP do Catar, Lusail", "🇦🇪 GP de Abu Dhabi, Yas Marina"
 ]
 
-weather_options = ["Seco", "Chuva Intermediária", "Chuva Forte"]
+weather_options = ["Seco ☀️", "Chuva Intermediária 🌧️", "Chuva Forte ⛈️"]
 
 st.title("Setup F1 25 - Cadastro e Consulta")
 
 # Carregamento de dados
 if os.path.exists(SETUP_FILE):
     df = pd.read_csv(SETUP_FILE)
+    if "Última Atualização" not in df.columns:
+        df["Última Atualização"] = ""
     setup_names = ["Cadastrar Novo"] + df["Nome do Setup"].dropna().unique().tolist() if "Nome do Setup" in df.columns else ["Cadastrar Novo"]
 else:
     df = pd.DataFrame()
@@ -55,22 +57,46 @@ def fazer_backup():
         backup_path = os.path.join(BACKUP_FOLDER, f"backup_{timestamp}.csv")
         df.to_csv(backup_path, index=False)
 
-# Aqui continuaria a lógica para "Cadastrar Novo" e editar setups salvos
-# que você já tinha implementado (sliders, botões e lógica de salvamento/edição)
-# Pode seguir adicionando esse bloco a partir daqui
+# Mostrar data da última atualização
+if menu != "Cadastrar Novo" and not df.empty:
+    setup_info = df[df["Nome do Setup"] == menu]
+    if not setup_info.empty:
+        data_atualizacao = setup_info.iloc[0].get("Última Atualização", "Não disponível")
+        st.info(f"🕒 Última atualização: {data_atualizacao}")
 
-# Exemplo de onde chamar o backup após salvar um novo setup ou alterar um existente:
-# fazer_backup()
+# Lógica de exclusão do setup
+if menu != "Cadastrar Novo" and not df.empty:
+    st.markdown("---")
+    if "delete_clicked" not in st.session_state:
+        st.session_state.delete_clicked = False
 
-if menu == "Cadastrar Novo":
-    st.header("Cadastrar novo setup")
-    nome_setup = st.text_input("Nome do Setup")
+    if st.button("🗑️ Excluir Setup"):
+        if not st.session_state.delete_clicked:
+            st.session_state.delete_clicked = True
+            st.experimental_rerun()
+        else:
+            st.warning("Tem certeza que deseja excluir este setup?")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✅ Confirmar Exclusão"):
+                    df = df[df["Nome do Setup"] != menu]
+                    df.to_csv(SETUP_FILE, index=False)
+                    fazer_backup()
+                    st.session_state.delete_clicked = False
+                    st.success("Setup excluído com sucesso.")
+                    st.rerun()
+            with col2:
+                if st.button("❌ Cancelar"):
+                    st.session_state.delete_clicked = False
+                    st.experimental_rerun()
+
+# Função para campos padrão
+def campos_comuns():
     pista = st.selectbox("Escolha a pista", tracks)
-    clima = st.selectbox("Condição climática", weather_options)
-
+    clima = st.selectbox("Condição Climática", weather_options)
     st.subheader("Aerodinâmica")
-    aero_diant = st.slider("Aero Asa Dianteira", 1, 50, 20)
-    aero_tras = st.slider("Aero Asa Traseira", 1, 50, 20)
+    asa_dianteira = st.slider("Asa Dianteira", 1, 50, 25)
+    asa_traseira = st.slider("Asa Traseira", 1, 50, 25)
 
     st.subheader("Transmissão")
     diff_on = st.slider("Transmissão Diferencial Pedal On", 0, 100, 50, step=5)
@@ -101,89 +127,37 @@ if menu == "Cadastrar Novo":
     press_td = st.slider("Pressão Traseiro Direito", 20.5, 26.5, 23.5)
     press_te = st.slider("Pressão Traseiro Esquerdo", 20.5, 26.5, 23.5)
 
-    if st.button("Salvar Setup") and nome_setup:
-        setup = {
-            "Nome do Setup": nome_setup,
-            "Pista": pista, "Clima": clima,
-            "Aero Asa Dianteira": aero_diant, "Aero Asa Traseira": aero_tras,
-            "Transmissão Diferencial Pedal On": diff_on, "Transmissão Diferencial Pedal Off": diff_off,
-            "Cambagem Frontal": camb_frontal, "Cambagem Traseira": camb_tras,
-            "Toe-out Dianteiro": toe_diant, "Toe-out Traseiro": toe_tras,
-            "Suspensão Frontal": susp_diant, "Suspensão Traseira": susp_tras,
-            "Anti-Roll Dianteiro": anti_roll_d, "Anti-Roll Traseiro": anti_roll_t,
-            "Altura Frontal": altura_d, "Altura Traseira": altura_t,
-            "Balanceamento de Freios Dianteiro": bal_freio, "Pressão dos freios": press_freio,
-            "Pressão Dianteiro Direito": press_dd, "Pressão Dianteiro Esquerdo": press_de,
-            "Pressão Traseiro Direito": press_td, "Pressão Traseiro Esquerdo": press_te
-        }
+    return locals()
 
-        if os.path.exists(SETUP_FILE):
-            df = pd.read_csv(SETUP_FILE)
-            df = pd.concat([df, pd.DataFrame([setup])], ignore_index=True)
-        else:
-            df = pd.DataFrame([setup])
-
-        df.to_csv(SETUP_FILE, index=False)
-        st.success("Setup salvo com sucesso!")
-
-elif menu in setup_names:
+# Cadastro ou Edição do Setup
+if menu == "Cadastrar Novo":
+    st.header("Cadastrar Novo Setup")
+    nome_setup = st.text_input("Nome do Setup", key="novo_nome_setup")
+    valores = campos_comuns()
+else:
     st.header(f"Editar Setup: {menu}")
+    nome_setup = menu
+    valores = campos_comuns()
 
-    selected_setup = df[df["Nome do Setup"] == menu].iloc[0]
-    nome_setup = selected_setup["Nome do Setup"]
-    nome_original = nome_setup  # manter o nome original para atualização
+# Botão de salvar
+if st.button("💾 Salvar Alterações"):
+    if nome_setup:
+        novo_setup = {"Nome do Setup": nome_setup, "Última Atualização": datetime.now().strftime("%d/%m/%Y %H:%M")}
+        for k, v in valores.items():
+            if k != "nome_setup":
+                novo_setup[k.replace("_", " ").title()] = v
 
-    st.text_input("Nome do Setup", value=nome_setup, disabled=True)
+        if menu == "Cadastrar Novo":
+            df = pd.concat([df, pd.DataFrame([novo_setup])], ignore_index=True)
+            st.success("Novo setup cadastrado com sucesso!")
+        else:
+            index = df[df["Nome do Setup"] == nome_setup].index
+            for col in novo_setup:
+                df.loc[index, col] = novo_setup[col]
+            st.success("Setup atualizado com sucesso!")
 
-    pista = st.selectbox("Escolha a pista", tracks, index=tracks.index(selected_setup["Pista"]) if selected_setup["Pista"] in tracks else 0)
-    clima = st.selectbox("Condição climática", weather_options, index=weather_options.index(selected_setup["Clima"]) if selected_setup["Clima"] in weather_options else 0)
-
-    st.subheader("Aerodinâmica")
-    aero_diant = st.slider("Aero Asa Dianteira", 1, 50, int(selected_setup["Aero Asa Dianteira"]))
-    aero_tras = st.slider("Aero Asa Traseira", 1, 50, int(selected_setup["Aero Asa Traseira"]))
-
-    st.subheader("Transmissão")
-    diff_on = st.slider("Transmissão Diferencial Pedal On", 0, 100, int(selected_setup["Transmissão Diferencial Pedal On"]), step=5)
-    diff_off = st.slider("Transmissão Diferencial Pedal Off", 0, 100, int(selected_setup["Transmissão Diferencial Pedal Off"]), step=5)
-
-    st.subheader("Geometria da Suspensão")
-    camb_frontal = st.slider("Cambagem Frontal", -3.5, -2.5, float(selected_setup["Cambagem Frontal"]))
-    camb_tras = st.slider("Cambagem Traseira", -2.0, -1.0, float(selected_setup["Cambagem Traseira"]))
-    toe_diant = st.slider("Toe-out Dianteiro", 0.0, 0.2, float(selected_setup["Toe-out Dianteiro"]))
-    toe_tras = st.slider("Toe-out Traseiro", 0.1, 0.25, float(selected_setup["Toe-out Traseiro"]))
-
-    st.subheader("Suspensão")
-    susp_diant = st.slider("Suspensão Frontal", 1, 41, int(selected_setup["Suspensão Frontal"]))
-    susp_tras = st.slider("Suspensão Traseira", 1, 41, int(selected_setup["Suspensão Traseira"]))
-    anti_roll_d = st.slider("Anti-Roll Dianteiro", 1, 21, int(selected_setup["Anti-Roll Dianteiro"]))
-    anti_roll_t = st.slider("Anti-Roll Traseiro", 1, 21, int(selected_setup["Anti-Roll Traseiro"]))
-    altura_d = st.slider("Altura Frontal", 15, 35, int(selected_setup["Altura Frontal"]))
-    altura_t = st.slider("Altura Traseira", 40, 60, int(selected_setup["Altura Traseira"]))
-
-    st.subheader("Freios")
-    bal_freio = st.slider("Balanceamento de Freios Dianteiro", 50, 70, int(selected_setup["Balanceamento de Freios Dianteiro"]), step=1)
-    st.caption("Valores menores = mais freio dianteiro")
-    press_freio = st.slider("Pressão dos freios", 80, 100, int(selected_setup["Pressão dos freios"]))
-
-    st.subheader("Pneus")
-    press_dd = st.slider("Pressão Dianteiro Direito", 22.5, 29.5, float(selected_setup["Pressão Dianteiro Direito"]))
-    press_de = st.slider("Pressão Dianteiro Esquerdo", 22.5, 29.5, float(selected_setup["Pressão Dianteiro Esquerdo"]))
-    press_td = st.slider("Pressão Traseiro Direito", 20.5, 26.5, float(selected_setup["Pressão Traseiro Direito"]))
-    press_te = st.slider("Pressão Traseiro Esquerdo", 20.5, 26.5, float(selected_setup["Pressão Traseiro Esquerdo"]))
-
-    if st.button("Salvar Alterações"):
-        index = df[df["Nome do Setup"] == nome_original].index[0]
-        df.loc[index] = [
-            nome_original, pista, clima,
-            aero_diant, aero_tras,
-            diff_on, diff_off,
-            camb_frontal, camb_tras,
-            toe_diant, toe_tras,
-            susp_diant, susp_tras,
-            anti_roll_d, anti_roll_t,
-            altura_d, altura_t,
-            bal_freio, press_freio,
-            press_dd, press_de, press_td, press_te
-        ]
         df.to_csv(SETUP_FILE, index=False)
-        st.success("Setup atualizado com sucesso!")
+        fazer_backup()
+        st.stop()
+    else:
+        st.warning("⚠️ Por favor, insira um nome para o setup.")
