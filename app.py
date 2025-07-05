@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
+import pytz
 
 # CONFIGURAÇÕES DE ACESSO
 PASSWORD = "f1buscape"
@@ -37,6 +38,10 @@ tracks = [
 weather_options = ["Seco ☀️", "Chuva Intermediária 🌧️", "Chuva Forte ⛈️"]
 
 st.title("Setup F1 25 - Cadastro e Consulta")
+
+# Função auxiliar para horário com fuso do Brasil
+def hora_brasil():
+    return datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M")
 
 # Carregamento de dados
 if os.path.exists(SETUP_FILE):
@@ -94,7 +99,6 @@ if menu != "Cadastrar Novo" and not df.empty:
 def campos_comuns():
     pista = st.selectbox("Escolha a pista", tracks)
     clima = st.selectbox("Condição Climática", weather_options)
-    st.subheader("Aerodinâmica")
     asa_dianteira = st.slider("Asa Dianteira", 1, 50, 25)
     asa_traseira = st.slider("Asa Traseira", 1, 50, 25)
 
@@ -142,7 +146,7 @@ else:
 # Botão de salvar
 if st.button("💾 Salvar Alterações"):
     if nome_setup:
-        novo_setup = {"Nome do Setup": nome_setup, "Última Atualização": datetime.now().strftime("%d/%m/%Y %H:%M")}
+        novo_setup = {"Nome do Setup": nome_setup, "Última Atualização": hora_brasil()}
         for k, v in valores.items():
             if k != "nome_setup":
                 novo_setup[k.replace("_", " ").title()] = v
