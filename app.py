@@ -97,21 +97,17 @@ for index, row in df_sorted.iterrows():
     if st.sidebar.button(label, key=unique_key):
         st.session_state.menu = unique_key
         st.rerun()
-# Continuação do código (formulário, sliders, salvar, exclusão etc.)
 
-# Botão para baixar backup
+# Backup e upload
 st.sidebar.markdown("---")
 st.sidebar.subheader("Backup dos Setups")
-
 if st.sidebar.download_button(
     label="⬇️ Baixar Backup",
     data=df.to_csv(index=False).encode('utf-8'),
     file_name="backup_setups_f1_25.csv",
-    mime="text/csv"
-):
+    mime="text/csv"):
     st.toast("Backup baixado com sucesso! 🗃️")
 
-# Upload de backup
 uploaded_file = st.sidebar.file_uploader("📤 Importar Backup CSV", type=["csv"])
 if uploaded_file:
     try:
@@ -133,7 +129,7 @@ if "menu" not in st.session_state:
 menu = st.session_state.menu
 
 if menu != "Cadastrar Novo" and not df.empty:
-    setup_info = df[df["Nome do Setup"] == menu]
+    setup_info = df[df["Nome do Setup"] == menu.split("__")[0]]
     if not setup_info.empty:
         data_atualizacao = setup_info.iloc[0].get("Última Atualização", "Não disponível")
         st.info(f"🕒 Última atualização: {data_atualizacao}")
@@ -149,7 +145,7 @@ if menu != "Cadastrar Novo" and not df.empty:
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Confirmar Exclusão"):
-                df = df[df["Nome do Setup"] != menu]
+                df = df[~((df["Nome do Setup"] == menu.split("__")[0]) & (df["Pista"] == menu.split("__")[1]))]
                 df.to_csv(SETUP_FILE, index=False)
                 fazer_backup()
                 st.session_state.delete_clicked = False
@@ -165,8 +161,8 @@ if menu != "Cadastrar Novo" and not df.empty:
             st.rerun()
 
 # Campos do Setup
-nome_setup = st.text_input("Nome do Setup", value=menu if menu != "Cadastrar Novo" else "")
-pista = st.selectbox("Pista", tracks, index=tracks.index(get_value("Pista", tracks[0])) if get_value("Pista", tracks[0]) in tracks else 0)
+nome_setup = st.text_input("Nome do Setup", value=menu.split("__")[0] if menu != "Cadastrar Novo" else "")
+pista = st.selectbox("Pista", tracks, index=tracks.index(menu.split("__")[1]) if menu != "Cadastrar Novo" and menu.split("__")[1] in tracks else 0)
 condicao = st.selectbox("Condição Climática", weather_options, index=weather_options.index(get_value("Clima", weather_options[0])) if get_value("Clima", weather_options[0]) in weather_options else 0)
 
 st.subheader("Aerodinâmica")
@@ -247,7 +243,7 @@ if st.button("📅 Salvar Alterações"):
         fazer_backup()
         st.success("✅ Setup salvo com sucesso!")
         st.balloons()
-        time.sleep(3)
+        time.sleep(2)
         st.rerun()
     else:
         st.warning("⚠️ O nome do setup é obrigatório para salvar.")
