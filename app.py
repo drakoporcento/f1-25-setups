@@ -48,7 +48,9 @@ if os.path.exists(SETUP_FILE):
     df = pd.read_csv(SETUP_FILE)
     if "Última Atualização" not in df.columns:
         df["Última Atualização"] = ""
-    setup_names = ["Cadastrar Novo"] + df["Nome do Setup"].dropna().unique().tolist() if "Nome do Setup" in df.columns else ["Cadastrar Novo"]
+    if "Nome do Setup" not in df.columns:
+        df["Nome do Setup"] = ""
+    setup_names = ["Cadastrar Novo"] + df["Nome do Setup"].dropna().unique().tolist()
 else:
     df = pd.DataFrame()
     setup_names = ["Cadastrar Novo"]
