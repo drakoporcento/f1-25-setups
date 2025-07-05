@@ -77,16 +77,15 @@ if "Pista" in df_sorted.columns:
 else:
     df_sorted["Pista"] = ""
     df_sorted = df_sorted.sort_values(by="Nome do Setup", key=lambda x: x.str.lower())
-setup_names = df_sorted["Nome do Setup"].dropna().tolist()
 
 if st.sidebar.button("➕ Cadastrar Novo Setup"):
     st.session_state.menu = "Cadastrar Novo"
     st.rerun()
 
-for setup in setup_names:
-    row = df[df["Nome do Setup"] == setup].fillna("")
-    pista = row["Pista"].values[0] if "Pista" in row.columns else ""
-    clima = row["Clima"].values[0] if "Clima" in row.columns else ""
+for index, row in df_sorted.iterrows():
+    setup = row["Nome do Setup"]
+    pista = row.get("Pista", "")
+    clima = row.get("Clima", "")
 
     flag = pista.split(" ")[0] if pista else ""
     circuit_name = pista[pista.find(" ")+1:] if pista else ""
@@ -94,11 +93,13 @@ for setup in setup_names:
     clima_nome = " ".join(clima.split(" ")[:-1]) if clima else ""
 
     label = f"{flag} {circuit_name} | {clima_nome} {icon} | {setup}"
+    unique_key = f"{setup}_{pista}_{clima}"
 
-    btn_style = "primary" if "menu" in st.session_state and st.session_state.menu == setup else "secondary"
-    if st.sidebar.button(label, key=setup):
-        st.session_state.menu = setup
+    if st.sidebar.button(label, key=unique_key):
+        st.session_state.menu = unique_key
         st.rerun()
+
+# Continuação do código (formulário, sliders, salvar, exclusão etc.)
 
 # Botão para baixar backup
 st.sidebar.markdown("---")
