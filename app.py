@@ -23,7 +23,7 @@ SETUP_FILE = 'setups_f1_25.csv'
 BACKUP_FOLDER = 'backups'
 os.makedirs(BACKUP_FOLDER, exist_ok=True)
 
-# Lista de pistas com bandeiras
+# Lista de pistas com bandeiras corrigidas
 tracks = [
     "🇦🇺 GP da Austrália, Melbourne", "🇨🇳 GP da China, Xangai", "🇯🇵 GP do Japão, Suzuka",
     "🇧🇭 GP do Bahrein, Sakhir", "🇸🇦 GP da Arábia Saudita, Jeddah", "🇺🇸 GP de Miami, EUA",
@@ -60,20 +60,83 @@ def fazer_backup():
         df.to_csv(backup_path, index=False)
 
 def get_value(coluna, padrao):
-    if menu != "Cadastrar Novo" and coluna in df.columns and menu in df["Nome do Setup"].values:
-        valor = df.loc[df["Nome do Setup"] == menu, coluna].values
+    if "menu" in st.session_state and st.session_state.menu != "Cadastrar Novo" and coluna in df.columns and st.session_state.menu in df["Nome do Setup"].values:
+        valor = df.loc[df["Nome do Setup"] == st.session_state.menu, coluna].values
         if len(valor) > 0:
             return valor[0]
     return padrao
 
-setup_names = ["Cadastrar Novo"] + df["Nome do Setup"].dropna().unique().tolist()
-menu = st.sidebar.selectbox("Menu", setup_names)
+# Botões de setup na sidebar
+st.sidebar.title("Setups Salvos")
+
+# Ordenar pelo nome da pista
+df_sorted = df.copy()
+df_sorted["Pista"] = df_sorted["Pista"].fillna("")
+df_sorted = df_sorted.sort_values(by="Pista", key=lambda x: x.str.lower())
+setup_names = df_sorted["Nome do Setup"].dropna().tolist()
+
+if st.sidebar.button("➕ Cadastrar Novo Setup"):
+    st.session_state.menu = "Cadastrar Novo"
+    st.rerun()
+
+for setup in setup_names:
+    row = df[df["Nome do Setup"] == setup].fillna("")
+    pista = row["Pista"].values[0] if "Pista" in row.columns else ""
+    clima = row["Clima"].values[0] if "Clima" in row.columns else ""
+
+    flag = pista.split(" ")[0] if pista else ""
+    circuit_name = pista[pista.find(" ")+1:] if pista else ""
+    icon = clima.split(" ")[-1] if clima else ""
+    clima_nome = " ".join(clima.split(" ")[:-1]) if clima else ""
+
+    label = f"{flag} {circuit_name} | {clima_nome} {icon} | {setup}"
+
+    btn_style = "primary" if "menu" in st.session_state and st.session_state.menu == setup else "secondary"
+    if st.sidebar.button(label, key=setup):
+        st.session_state.menu = setup
+        st.rerun()
+
+# Botão para baixar backup
+st.sidebar.markdown("---")
+st.sidebar.subheader("Backup dos Setups")
+
+if st.sidebar.download_button(
+    label="⬇️ Baixar Backup",
+    data=df.to_csv(index=False).encode('utf-8'),
+    file_name="backup_setups_f1_25.csv",
+    mime="text/csv"
+):
+    st.toast("Backup baixado com sucesso! 🗃️")
+
+# Upload de backup
+uploaded_file = st.sidebar.file_uploader("📤 Importar Backup CSV", type=["csv"])
+if uploaded_file:
+    try:
+        new_df = pd.read_csv(uploaded_file)
+        if "Nome do Setup" in new_df.columns:
+            df = pd.concat([df, new_df]).drop_duplicates(subset=["Nome do Setup"], keep="last")
+            df.to_csv(SETUP_FILE, index=False)
+            st.sidebar.success("Backup importado com sucesso!")
+            st.rerun()
+        else:
+            st.sidebar.error("Arquivo inválido. Verifique se possui a coluna 'Nome do Setup'.")
+    except Exception as e:
+        st.sidebar.error(f"Erro ao importar backup: {e}")
+
+# Define valor padrão
+if "menu" not in st.session_state:
+    st.session_state.menu = "Cadastrar Novo"
+
+menu = st.session_state.menu
 
 if menu != "Cadastrar Novo" and not df.empty:
     setup_info = df[df["Nome do Setup"] == menu]
     if not setup_info.empty:
         data_atualizacao = setup_info.iloc[0].get("Última Atualização", "Não disponível")
         st.info(f"🕒 Última atualização: {data_atualizacao}")
+
+# O restante do código permanece igual, incluindo os sliders, salvamento, exclusão etc.
+
 
 # Exclusão
 if menu != "Cadastrar Novo" and not df.empty:
@@ -101,21 +164,14 @@ if menu != "Cadastrar Novo" and not df.empty:
             st.session_state.delete_clicked = True
             st.rerun()
 
-# Edição/Cadastro
-st.markdown("---")
-st.header(f"Editar Setup: {menu if menu != 'Cadastrar Novo' else 'Novo Setup'}")
-
-if menu == "Cadastrar Novo":
-    nome_setup = st.text_input("Nome do Setup")
-else:
-    nome_setup = menu
-
-pista = st.selectbox("Escolha a pista", tracks, index=tracks.index(get_value("Pista", tracks[0])))
-condicao = st.selectbox("Condição Climática", weather_options, index=weather_options.index(get_value("Clima", weather_options[0])))
+# Campos do Setup
+nome_setup = st.text_input("Nome do Setup", value=menu if menu != "Cadastrar Novo" else "")
+pista = st.selectbox("Pista", tracks, index=tracks.index(get_value("Pista", tracks[0])) if get_value("Pista", tracks[0]) in tracks else 0)
+condicao = st.selectbox("Condição Climática", weather_options, index=weather_options.index(get_value("Clima", weather_options[0])) if get_value("Clima", weather_options[0]) in weather_options else 0)
 
 st.subheader("Aerodinâmica")
-asa_dianteira = st.slider("Asa Dianteira", 1, 50, int(get_value("Asa Dianteira", 25)))
-asa_traseira = st.slider("Asa Traseira", 1, 50, int(get_value("Asa Traseira", 25)))
+asa_dianteira = st.slider("Asa Dianteira", 0, 50, int(get_value("Asa Dianteira", 25)))
+asa_traseira = st.slider("Asa Traseira", 0, 50, int(get_value("Asa Traseira", 25)))
 
 st.subheader("Transmissão")
 diff_on = st.slider("Transmissão Diferencial Pedal On", 0, 100, int(get_value("Transmissão Diferencial Pedal On", 50)), step=5)
@@ -136,17 +192,17 @@ altura_d = st.slider("Altura Frontal", 15, 35, int(get_value("Altura Frontal", 2
 altura_t = st.slider("Altura Traseira", 40, 60, int(get_value("Altura Traseira", 50)))
 
 st.subheader("Freios")
-bal_freio = st.slider("Balanceamento de Freios Dianteiro", 50, 70, int(get_value("Balanceamento De Freios Dianteiro", 60)))
+bal_freio = st.slider("Balanceamento de Freios Dianteiro", 50, 70, int(get_value("Balanceamento De Freios Dianteiro", 50)), step=1)
 st.caption("Valores menores = mais freio dianteiro")
 press_freio = st.slider("Pressão dos freios", 80, 100, int(get_value("Pressão Dos Freios", 95)))
 
 st.subheader("Pneus")
-press_dd = st.slider("Pressão Dianteiro Direito", 22.5, 29.5, float(get_value("Pressão Dianteiro Direito", 26.0)))
-press_de = st.slider("Pressão Dianteiro Esquerdo", 22.5, 29.5, float(get_value("Pressão Dianteiro Esquerdo", 26.0)))
-press_td = st.slider("Pressão Traseiro Direito", 20.5, 26.5, float(get_value("Pressão Traseiro Direito", 23.5)))
-press_te = st.slider("Pressão Traseiro Esquerdo", 20.5, 26.5, float(get_value("Pressão Traseiro Esquerdo", 23.5)))
+press_dd = st.slider("Pressão Dianteiro Direito", 22.5, 29.5, float(get_value("Pressão Dianteiro Direito", 26.0)), step=0.5)
+press_de = st.slider("Pressão Dianteiro Esquerdo", 22.5, 29.5, float(get_value("Pressão Dianteiro Esquerdo", 26.0)), step=0.5)
+press_td = st.slider("Pressão Traseiro Direito", 20.5, 26.5, float(get_value("Pressão Traseiro Direito", 23.5)), step=0.5)
+press_te = st.slider("Pressão Traseiro Esquerdo", 20.5, 26.5, float(get_value("Pressão Traseiro Esquerdo", 23.5)), step=0.5)
 
-# Salvar
+# Botão de salvar
 if st.button("📅 Salvar Alterações"):
     if nome_setup:
         nova_linha = {
