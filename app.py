@@ -71,8 +71,12 @@ st.sidebar.title("Setups Salvos")
 
 # Ordenar pelo nome da pista
 df_sorted = df.copy()
-df_sorted["Pista"] = df_sorted["Pista"].fillna("")
-df_sorted = df_sorted.sort_values(by="Pista", key=lambda x: x.str.lower())
+if "Pista" in df_sorted.columns:
+    df_sorted["Pista"] = df_sorted["Pista"].fillna("")
+    df_sorted = df_sorted.sort_values(by="Pista", key=lambda x: x.str.lower())
+else:
+    df_sorted["Pista"] = ""
+    df_sorted = df_sorted.sort_values(by="Nome do Setup", key=lambda x: x.str.lower())
 setup_names = df_sorted["Nome do Setup"].dropna().tolist()
 
 if st.sidebar.button("➕ Cadastrar Novo Setup"):
