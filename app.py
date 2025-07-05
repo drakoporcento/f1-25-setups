@@ -118,7 +118,7 @@ if uploaded_file:
     try:
         new_df = pd.read_csv(uploaded_file)
         if "Nome do Setup" in new_df.columns:
-            df = pd.concat([df, new_df]).drop_duplicates(subset=["Nome do Setup"], keep="last")
+            df = pd.concat([df, new_df]).drop_duplicates(subset=["Nome do Setup", "Pista", "Clima"], keep="last")
             df.to_csv(SETUP_FILE, index=False)
             st.sidebar.success("Backup importado com sucesso!")
             st.rerun()
@@ -138,9 +138,6 @@ if menu != "Cadastrar Novo" and not df.empty:
     if not setup_info.empty:
         data_atualizacao = setup_info.iloc[0].get("Última Atualização", "Não disponível")
         st.info(f"🕒 Última atualização: {data_atualizacao}")
-
-# O restante do código permanece igual, incluindo os sliders, salvamento, exclusão etc.
-
 
 # Exclusão
 if menu != "Cadastrar Novo" and not df.empty:
@@ -236,8 +233,14 @@ if st.button("📅 Salvar Alterações"):
             "Pressão Traseiro Esquerdo": press_te
         }
 
-        if nome_setup in df["Nome do Setup"].values:
-            df.loc[df["Nome do Setup"] == nome_setup, nova_linha.keys()] = nova_linha.values()
+        duplicado = (
+            (df["Nome do Setup"] == nome_setup) &
+            (df["Pista"] == pista) &
+            (df["Clima"] == condicao)
+        )
+
+        if duplicado.any():
+            df.loc[duplicado, nova_linha.keys()] = nova_linha.values()
         else:
             df = pd.concat([df, pd.DataFrame([nova_linha])], ignore_index=True)
 
