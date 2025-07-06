@@ -234,7 +234,6 @@ with st.expander("🔧 Configurações do Setup", expanded=True):
         press_td = st.slider("Traseiro Direito", 20.5, 26.5, float(get_value("Pressão Traseiro Direito", 23.5)), step=0.5)
         press_te = st.slider("Traseiro Esquerdo", 20.5, 26.5, float(get_value("Pressão Traseiro Esquerdo", 23.5)), step=0.5)
 
-
 if st.button("📅 Salvar Alterações"):
     if nome_setup:
         nova_linha = {
