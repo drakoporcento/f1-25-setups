@@ -183,9 +183,16 @@ if menu != "Cadastrar Novo" and not df.empty:
 
 # Campos do Setup em layout otimizado
 st.markdown("## Cadastro de Setup")
-nome_setup = st.text_input("Nome do Setup", value=menu.split("__")[0] if menu != "Cadastrar Novo" else "")
-pista = st.selectbox("Pista", tracks, index=tracks.index(menu.split("__")[1]) if menu != "Cadastrar Novo" and menu.split("__")[1] in tracks else 0)
-condicao = st.selectbox("Condição Climática", weather_options, index=weather_options.index(get_value("Clima", weather_options[0])) if get_value("Clima", weather_options[0]) in weather_options else 0)
+col_a, col_b, col_c = st.columns(3)
+
+with col_a:
+    nome_setup = st.text_input("Nome do Setup", value=menu.split("__")[0] if menu != "Cadastrar Novo" else "")
+
+with col_b:
+    pista = st.selectbox("Pista", tracks, index=tracks.index(menu.split("__")[1]) if menu != "Cadastrar Novo" and menu.split("__")[1] in tracks else 0)
+
+with col_c:
+    condicao = st.selectbox("Condição Climática", weather_options, index=weather_options.index(get_value("Clima", weather_options[0])) if get_value("Clima", weather_options[0]) in weather_options else 0)
 
 with st.expander("🔧 Configurações do Setup", expanded=True):
     col1, col2, col3 = st.columns(3)
