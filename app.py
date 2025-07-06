@@ -103,8 +103,9 @@ def get_value(coluna, padrao):
 # Sidebar com setups
 st.sidebar.title("Setups Salvos")
 df_sorted = df.copy()
-df_sorted["Pista"] = df_sorted["Pista"].fillna("")
-df_sorted = df_sorted.sort_values(by="Pista", key=lambda x: x.str.lower())
+track_order = {track: idx for idx, track in enumerate(tracks)}
+df_sorted["ordem_pista"] = df_sorted["Pista"].map(track_order)
+df_sorted = df_sorted.sort_values(by="ordem_pista", na_position="last").drop(columns="ordem_pista")
 
 if st.sidebar.button("➕ Cadastrar Novo Setup"):
     st.session_state.menu = "Cadastrar Novo"
