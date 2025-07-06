@@ -38,6 +38,37 @@ tracks = [
 
 weather_options = ["Seco ☀️", "Chuva Intermediária 🌧️", "Chuva Forte ⛈️"]
 
+st.set_page_config(layout="wide")
+st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        /* Estilo para sliders menores */
+        .stSlider > div[data-baseweb="slider"] {
+            width: 90% !important;
+            margin: auto !important;
+        }
+
+        /* Título centralizado nos grupos */
+        .setup-section-title {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Container interno das colunas */
+        [data-testid="column"] {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("Setup F1 25 - Cadastro e Consulta")
 
 def hora_brasil():
@@ -69,10 +100,8 @@ def get_value(coluna, padrao):
             return row[coluna].values[0]
     return padrao
 
-# Botões de setup na sidebar
+# Sidebar com setups
 st.sidebar.title("Setups Salvos")
-
-# Ordenar pelo nome da pista
 df_sorted = df.copy()
 df_sorted["Pista"] = df_sorted["Pista"].fillna("")
 df_sorted = df_sorted.sort_values(by="Pista", key=lambda x: x.str.lower())
@@ -85,27 +114,20 @@ for index, row in df_sorted.iterrows():
     setup = row["Nome do Setup"]
     pista = row.get("Pista", "")
     clima = row.get("Clima", "")
-
     flag = pista.split(" ")[0] if pista else ""
     circuit_name = pista[pista.find(" ")+1:] if pista else ""
     icon = clima.split(" ")[-1] if clima else ""
     clima_nome = " ".join(clima.split(" ")[:-1]) if clima else ""
-
     label = f"{flag} {circuit_name} | {clima_nome} {icon} | {setup}"
     unique_key = f"{setup}__{pista}"
-
     if st.sidebar.button(label, key=unique_key):
         st.session_state.menu = unique_key
         st.rerun()
 
-# Backup e upload
+# Backup e Upload
 st.sidebar.markdown("---")
 st.sidebar.subheader("Backup dos Setups")
-if st.sidebar.download_button(
-    label="⬇️ Baixar Backup",
-    data=df.to_csv(index=False).encode('utf-8'),
-    file_name="backup_setups_f1_25.csv",
-    mime="text/csv"):
+if st.sidebar.download_button("⬇️ Baixar Backup", data=df.to_csv(index=False).encode('utf-8'), file_name="backup_setups_f1_25.csv", mime="text/csv"):
     st.toast("Backup baixado com sucesso! 🗃️")
 
 uploaded_file = st.sidebar.file_uploader("📤 Importar Backup CSV", type=["csv"])
@@ -125,11 +147,10 @@ if uploaded_file:
 # Define valor padrão
 if "menu" not in st.session_state:
     st.session_state.menu = "Cadastrar Novo"
-
 menu = st.session_state.menu
 
 if menu != "Cadastrar Novo" and not df.empty:
-    setup_info = df[df["Nome do Setup"] == menu.split("__")[0]]
+    setup_info = df[(df["Nome do Setup"] == menu.split("__")[0]) & (df["Pista"] == menu.split("__")[1])]
     if not setup_info.empty:
         data_atualizacao = setup_info.iloc[0].get("Última Atualização", "Não disponível")
         st.info(f"🕒 Última atualização: {data_atualizacao}")
@@ -160,45 +181,53 @@ if menu != "Cadastrar Novo" and not df.empty:
             st.session_state.delete_clicked = True
             st.rerun()
 
-# Campos do Setup
+# Campos do Setup em layout otimizado
+st.markdown("## Cadastro de Setup")
 nome_setup = st.text_input("Nome do Setup", value=menu.split("__")[0] if menu != "Cadastrar Novo" else "")
 pista = st.selectbox("Pista", tracks, index=tracks.index(menu.split("__")[1]) if menu != "Cadastrar Novo" and menu.split("__")[1] in tracks else 0)
 condicao = st.selectbox("Condição Climática", weather_options, index=weather_options.index(get_value("Clima", weather_options[0])) if get_value("Clima", weather_options[0]) in weather_options else 0)
 
-st.subheader("Aerodinâmica")
-asa_dianteira = st.slider("Asa Dianteira", 0, 50, int(get_value("Asa Dianteira", 25)))
-asa_traseira = st.slider("Asa Traseira", 0, 50, int(get_value("Asa Traseira", 25)))
+with st.expander("🔧 Configurações do Setup", expanded=True):
+    col1, col2, col3 = st.columns(3)
 
-st.subheader("Transmissão")
-diff_on = st.slider("Transmissão Diferencial Pedal On", 0, 100, int(get_value("Transmissão Diferencial Pedal On", 50)), step=5)
-diff_off = st.slider("Transmissão Diferencial Pedal Off", 0, 100, int(get_value("Transmissão Diferencial Pedal Off", 50)), step=5)
+    with col1:
+        st.markdown('<div class="setup-section-title">Aerodinâmica</div>', unsafe_allow_html=True)
+        asa_dianteira = st.slider("Dianteira", 0, 50, int(get_value("Asa Dianteira", 25)))
+        asa_traseira = st.slider("Traseira", 0, 50, int(get_value("Asa Traseira", 25)))
 
-st.subheader("Geometria da Suspensão")
-camb_frontal = st.slider("Cambagem Frontal", -3.5, -2.5, float(get_value("Cambagem Frontal", -3.0)))
-camb_tras = st.slider("Cambagem Traseira", -2.0, -1.0, float(get_value("Cambagem Traseira", -1.5)))
-toe_diant = st.slider("Toe-out Dianteiro", 0.0, 0.2, float(get_value("Toe-Out Dianteiro", 0.1)))
-toe_tras = st.slider("Toe-out Traseiro", 0.1, 0.25, float(get_value("Toe-Out Traseiro", 0.15)))
+        st.markdown('<div class="setup-section-title">Transmissão</div>', unsafe_allow_html=True)
+        diff_on = st.slider("Diferencial ON", 0, 100, int(get_value("Transmissão Diferencial Pedal On", 50)), step=5)
+        diff_off = st.slider("Diferencial OFF", 0, 100, int(get_value("Transmissão Diferencial Pedal Off", 50)), step=5)
+        
+        st.markdown('<div class="setup-section-title">Geometria da Suspensão</div>', unsafe_allow_html=True)
+        camb_frontal = st.slider("Cambagem Frontal", -3.5, -2.5, float(get_value("Cambagem Frontal", -3.0)))
+        camb_tras = st.slider("Cambagem Traseira", -2.0, -1.0, float(get_value("Cambagem Traseira", -1.5)))
+        toe_diant = st.slider("Toe-Out Dianteiro", 0.0, 0.2, float(get_value("Toe-Out Dianteiro", 0.1)))
+        toe_tras = st.slider("Toe-Out Traseiro", 0.1, 0.25, float(get_value("Toe-Out Traseiro", 0.15)))        
 
-st.subheader("Suspensão")
-susp_diant = st.slider("Suspensão Frontal", 1, 41, int(get_value("Suspensão Frontal", 20)))
-susp_tras = st.slider("Suspensão Traseira", 1, 41, int(get_value("Suspensão Traseira", 20)))
-anti_roll_d = st.slider("Anti-Roll Dianteiro", 1, 21, int(get_value("Anti-Roll Dianteiro", 10)))
-anti_roll_t = st.slider("Anti-Roll Traseiro", 1, 21, int(get_value("Anti-Roll Traseiro", 10)))
-altura_d = st.slider("Altura Frontal", 15, 35, int(get_value("Altura Frontal", 25)))
-altura_t = st.slider("Altura Traseira", 40, 60, int(get_value("Altura Traseira", 50)))
+    with col2:
 
-st.subheader("Freios")
-bal_freio = st.slider("Balanceamento de Freios Dianteiro", 50, 70, int(get_value("Balanceamento De Freios Dianteiro", 50)), step=1)
-st.caption("Valores menores = mais freio dianteiro")
-press_freio = st.slider("Pressão dos freios", 80, 100, int(get_value("Pressão Dos Freios", 95)))
+        st.markdown('<div class="setup-section-title">Suspensão</div>', unsafe_allow_html=True)
+        susp_diant = st.slider("Frontal", 1, 41, int(get_value("Suspensão Frontal", 20)))
+        susp_tras = st.slider("Traseira", 1, 41, int(get_value("Suspensão Traseira", 20)))
+        anti_roll_d = st.slider("Anti-Roll D", 1, 21, int(get_value("Anti-Roll Dianteiro", 10)))
+        anti_roll_t = st.slider("Anti-Roll T", 1, 21, int(get_value("Anti-Roll Traseiro", 10)))
+        altura_d = st.slider("Altura Frontal", 15, 35, int(get_value("Altura Frontal", 25)))
+        altura_t = st.slider("Altura Traseira", 40, 60, int(get_value("Altura Traseira", 50)))
 
-st.subheader("Pneus")
-press_dd = st.slider("Pressão Dianteiro Direito", 22.5, 29.5, float(get_value("Pressão Dianteiro Direito", 26.0)), step=0.5)
-press_de = st.slider("Pressão Dianteiro Esquerdo", 22.5, 29.5, float(get_value("Pressão Dianteiro Esquerdo", 26.0)), step=0.5)
-press_td = st.slider("Pressão Traseiro Direito", 20.5, 26.5, float(get_value("Pressão Traseiro Direito", 23.5)), step=0.5)
-press_te = st.slider("Pressão Traseiro Esquerdo", 20.5, 26.5, float(get_value("Pressão Traseiro Esquerdo", 23.5)), step=0.5)
+    with col3:
 
-# Botão de salvar
+        st.markdown('<div class="setup-section-title">Freios</div>', unsafe_allow_html=True)
+        bal_freio = st.slider("Balanceamento Dianteiro", 50, 70, int(get_value("Balanceamento De Freios Dianteiro", 50)), step=1)
+        press_freio = st.slider("Pressão dos Freios", 80, 100, int(get_value("Pressão Dos Freios", 95)))
+
+        st.markdown('<div class="setup-section-title">Pneus</div>', unsafe_allow_html=True)
+        press_dd = st.slider("Dianteiro Direito", 22.5, 29.5, float(get_value("Pressão Dianteiro Direito", 26.0)), step=0.5)
+        press_de = st.slider("Dianteiro Esquerdo", 22.5, 29.5, float(get_value("Pressão Dianteiro Esquerdo", 26.0)), step=0.5)
+        press_td = st.slider("Traseiro Direito", 20.5, 26.5, float(get_value("Pressão Traseiro Direito", 23.5)), step=0.5)
+        press_te = st.slider("Traseiro Esquerdo", 20.5, 26.5, float(get_value("Pressão Traseiro Esquerdo", 23.5)), step=0.5)
+
+
 if st.button("📅 Salvar Alterações"):
     if nome_setup:
         nova_linha = {
@@ -227,18 +256,15 @@ if st.button("📅 Salvar Alterações"):
             "Pressão Traseiro Direito": press_td,
             "Pressão Traseiro Esquerdo": press_te
         }
-
         duplicado = (
             (df["Nome do Setup"] == nome_setup) &
             (df["Pista"] == pista) &
             (df["Clima"] == condicao)
         )
-
         if duplicado.any():
             df.loc[duplicado, nova_linha.keys()] = nova_linha.values()
         else:
             df = pd.concat([df, pd.DataFrame([nova_linha])], ignore_index=True)
-
         df.to_csv(SETUP_FILE, index=False)
         fazer_backup()
         st.success("✅ Setup salvo com sucesso!")
