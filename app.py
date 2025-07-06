@@ -209,10 +209,10 @@ with st.expander("🔧 Configurações do Setup", expanded=True):
         diff_off = st.slider("Diferencial OFF", 0, 100, int(get_value("Transmissão Diferencial Pedal Off", 50)), step=5)
         
         st.markdown('<div class="setup-section-title">Geometria da Suspensão</div>', unsafe_allow_html=True)
-        camb_frontal = st.slider("Cambagem Frontal", -3.5, -2.5, float(get_value("Cambagem Frontal", -3.0)))
-        camb_tras = st.slider("Cambagem Traseira", -2.0, -1.0, float(get_value("Cambagem Traseira", -1.5)))
-        toe_diant = st.slider("Toe-Out Dianteiro", 0.0, 0.2, float(get_value("Toe-Out Dianteiro", 0.1)))
-        toe_tras = st.slider("Toe-Out Traseiro", 0.1, 0.25, float(get_value("Toe-Out Traseiro", 0.15)))        
+        camb_frontal = st.slider("Cambagem Frontal", -3.5, -2.5, float(get_value("Cambagem Frontal", -3.5)))
+        camb_tras = st.slider("Cambagem Traseira", -2.0, -1.0, float(get_value("Cambagem Traseira", -2.0)))
+        toe_diant = st.slider("Toe-Out Dianteiro", 0.0, 0.2, float(get_value("Toe-Out Dianteiro", 0.0)))
+        toe_tras = st.slider("Toe-Out Traseiro", 0.1, 0.25, float(get_value("Toe-Out Traseiro", 0.10)))        
 
     with col2:
 
