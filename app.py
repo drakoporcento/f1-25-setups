@@ -46,6 +46,7 @@ setup_descriptions = {
     "Pneus": "Pressão afeta aderência e desgaste. Pressões mais baixas (ex: 22.5) aumentam a área de contato, melhorando aderência em curvas, mas aumentam desgaste. Pressões mais altas (ex: 29.5) reduzem desgaste e aquecimento, ideais para longos stints."
 }
 
+
 # Função para renderizar título com tooltip
 def titulo_setup_com_info(nome):
     info = setup_descriptions.get(nome, "")
