@@ -137,7 +137,7 @@ for index, row in df_sorted.iterrows():
     icon = clima.split(" ")[-1] if clima else ""
     clima_nome = " ".join(clima.split(" ")[:-1]) if clima else ""
     label = f"{flag} {circuit_name} | {clima_nome} {icon} | {setup}"
-    unique_key = f"{setup}__{pista}"
+    unique_key = f"{setup}__{pista}__{clima}"
     if st.sidebar.button(label, key=unique_key):
         st.session_state.menu = unique_key
         st.rerun()
@@ -167,11 +167,27 @@ if "menu" not in st.session_state:
     st.session_state.menu = "Cadastrar Novo"
 menu = st.session_state.menu
 
+# Inicializa variáveis padrão
+setup_nome = ""
+setup_pista = tracks[0]
+setup_clima = weather_options[0]
+
+# Se estiver editando um setup existente
 if menu != "Cadastrar Novo" and not df.empty:
-    setup_info = df[(df["Nome do Setup"] == menu.split("__")[0]) & (df["Pista"] == menu.split("__")[1])]
+    parts = menu.split("__")
+    setup_nome = parts[0]
+    setup_pista = parts[1]
+    setup_clima = parts[2] if len(parts) > 2 else weather_options[0]
+
+    setup_info = df[
+        (df["Nome do Setup"] == setup_nome) &
+        (df["Pista"] == setup_pista) &
+        (df["Clima"] == setup_clima)
+    ]
     if not setup_info.empty:
         data_atualizacao = setup_info.iloc[0].get("Última Atualização", "Não disponível")
         st.info(f"🕒 Última atualização: {data_atualizacao}")
+
 
 # Exclusão
 if menu != "Cadastrar Novo" and not df.empty:
@@ -184,7 +200,11 @@ if menu != "Cadastrar Novo" and not df.empty:
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Confirmar Exclusão"):
-                df = df[~((df["Nome do Setup"] == menu.split("__")[0]) & (df["Pista"] == menu.split("__")[1]))]
+                df = df[~(
+                    (df["Nome do Setup"] == setup_nome) &
+                    (df["Pista"] == setup_pista) &
+                    (df["Clima"] == setup_clima)
+                )]
                 df.to_csv(SETUP_FILE, index=False)
                 fazer_backup()
                 st.session_state.delete_clicked = False
@@ -204,13 +224,13 @@ st.markdown("## Cadastro de Setup")
 col_a, col_b, col_c = st.columns(3)
 
 with col_a:
-    nome_setup = st.text_input("Nome do Setup", value=menu.split("__")[0] if menu != "Cadastrar Novo" else "")
+    nome_setup = st.text_input("Nome do Setup", value=setup_nome if menu != "Cadastrar Novo" else "")
 
 with col_b:
-    pista = st.selectbox("Pista", tracks, index=tracks.index(menu.split("__")[1]) if menu != "Cadastrar Novo" and menu.split("__")[1] in tracks else 0)
+    pista = st.selectbox("Pista", tracks, index=tracks.index(setup_pista) if menu != "Cadastrar Novo" and setup_pista in tracks else 0)
 
 with col_c:
-    condicao = st.selectbox("Condição Climática", weather_options, index=weather_options.index(get_value("Clima", weather_options[0])) if get_value("Clima", weather_options[0]) in weather_options else 0)
+    condicao = st.selectbox("Condição Climática", weather_options, index=weather_options.index(setup_clima) if setup_clima in weather_options else 0)
 
 with st.expander("🔧 Configurações do Setup", expanded=True):
     col1, col2, col3 = st.columns(3)
@@ -280,15 +300,26 @@ if st.button("📅 Salvar Alterações"):
             "Pressão Traseiro Direito": press_td,
             "Pressão Traseiro Esquerdo": press_te
         }
-        duplicado = (
-            (df["Nome do Setup"] == nome_setup) &
-            (df["Pista"] == pista) &
-            (df["Clima"] == condicao)
-        )
+
+        # Se estamos editando um setup já existente, usamos os valores antigos como chave
+        if menu != "Cadastrar Novo":
+            duplicado = (
+                (df["Nome do Setup"] == setup_nome) &
+                (df["Pista"] == setup_pista) &
+                (df["Clima"] == setup_clima)
+            )
+        else:
+            duplicado = (
+                (df["Nome do Setup"] == nome_setup) &
+                (df["Pista"] == pista) &
+                (df["Clima"] == condicao)
+            )
+
         if duplicado.any():
             df.loc[duplicado, nova_linha.keys()] = nova_linha.values()
         else:
             df = pd.concat([df, pd.DataFrame([nova_linha])], ignore_index=True)
+
         df.to_csv(SETUP_FILE, index=False)
         fazer_backup()
         st.success("✅ Setup salvo com sucesso!")
