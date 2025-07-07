@@ -36,6 +36,21 @@ tracks = [
     "🇺🇸 GP de Las Vegas, Las Vegas", "🇶🇦 GP do Catar, Lusail", "🇦🇪 GP de Abu Dhabi, Yas Marina"
 ]
 
+# Mapeamento de descrições técnicas para exibição nos tooltips
+setup_descriptions = {
+    "Aerodinâmica": "A aerodinâmica ajusta a força que 'cola' o carro no chão. Por exemplo, uma asa dianteira em 20 e traseira em 10 resulta em mais pressão na frente, ajudando nas curvas, mas com menor pressão atrás, o que deixa o carro mais solto na traseira e mais rápido em retas. Ideal para pistas com muitas retas.",
+    "Transmissão": "Define como o carro transfere a potência para as rodas. Um diferencial ON em 80% faz com que ambas as rodas traseiras girem de forma mais parecida, o que melhora tração em saídas de curva, mas pode causar subesterço. Já OFF em 50% melhora controle ao soltar o acelerador.",
+    "Geometria da Suspensão": "Ajusta a angulação das rodas. Mais cambagem (ex: -3.5) melhora aderência nas curvas, mas desgasta mais os pneus. Menor toe-out (ex: 0.0) reduz arrasto, ajudando na velocidade, mas prejudica a estabilidade.",
+    "Suspensão": "Controla a rigidez e estabilidade do carro:\n- Suspensões mais duras (ex: 35) deixam o carro mais ágil e responsivo, mas instável ao passar por zebras ou ondulações.\n- Anti-roll bars mais altos (ex: 20) reduzem a rolagem lateral em curvas, dando mais controle, mas tornam o carro mais imprevisível em trechos irregulares.\n- Altura Frontal/Traseira afeta aerodinâmica e equilíbrio. Altura frontal baixa e traseira alta aumenta pressão frontal e melhora entrada de curva, mas pode causar instabilidade em retas ou raspadas em zebras.",
+    "Freios": "Ajusta o equilíbrio da frenagem entre frente e traseira. Um valor de 70% dianteiro concentra a força de frenagem na frente, ideal para frenagens fortes, mas pode causar travamento das rodas. Um valor mais próximo de 50% traz mais equilíbrio.",
+    "Pneus": "Pressão afeta aderência e desgaste. Pressões mais baixas (ex: 22.5) aumentam a área de contato, melhorando aderência em curvas, mas aumentam desgaste. Pressões mais altas (ex: 29.5) reduzem desgaste e aquecimento, ideais para longos stints."
+}
+
+# Função para renderizar título com tooltip
+def titulo_setup_com_info(nome):
+    info = setup_descriptions.get(nome, "")
+    return st.markdown(f'<div class="setup-section-title">{nome} <span title="{info}" style="cursor: help;">ℹ️</span></div>', unsafe_allow_html=True)
+
 weather_options = ["Seco ☀️", "Chuva Intermediária 🌧️", "Chuva Forte ⛈️"]
 
 st.set_page_config(layout="wide")
@@ -200,15 +215,15 @@ with st.expander("🔧 Configurações do Setup", expanded=True):
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown('<div class="setup-section-title">Aerodinâmica</div>', unsafe_allow_html=True)
+        titulo_setup_com_info("Aerodinâmica")
         asa_dianteira = st.slider("Dianteira", 0, 50, int(get_value("Asa Dianteira", 25)))
         asa_traseira = st.slider("Traseira", 0, 50, int(get_value("Asa Traseira", 25)))
 
-        st.markdown('<div class="setup-section-title">Transmissão</div>', unsafe_allow_html=True)
+        titulo_setup_com_info("Transmissão")
         diff_on = st.slider("Diferencial ON", 0, 100, int(get_value("Transmissão Diferencial Pedal On", 50)), step=5)
         diff_off = st.slider("Diferencial OFF", 0, 100, int(get_value("Transmissão Diferencial Pedal Off", 50)), step=5)
         
-        st.markdown('<div class="setup-section-title">Geometria da Suspensão</div>', unsafe_allow_html=True)
+        titulo_setup_com_info("Geometria da Suspensão")
         camb_frontal = st.slider("Cambagem Frontal", -3.5, -2.5, float(get_value("Cambagem Frontal", -3.5)))
         camb_tras = st.slider("Cambagem Traseira", -2.0, -1.0, float(get_value("Cambagem Traseira", -2.0)))
         toe_diant = st.slider("Toe-Out Dianteiro", 0.0, 0.2, float(get_value("Toe-Out Dianteiro", 0.0)))
@@ -216,7 +231,7 @@ with st.expander("🔧 Configurações do Setup", expanded=True):
 
     with col2:
 
-        st.markdown('<div class="setup-section-title">Suspensão</div>', unsafe_allow_html=True)
+        titulo_setup_com_info("Suspensão")
         susp_diant = st.slider("Frontal", 1, 41, int(get_value("Suspensão Frontal", 20)))
         susp_tras = st.slider("Traseira", 1, 41, int(get_value("Suspensão Traseira", 20)))
         anti_roll_d = st.slider("Anti-Roll D", 1, 21, int(get_value("Anti-Roll Dianteiro", 10)))
@@ -226,11 +241,11 @@ with st.expander("🔧 Configurações do Setup", expanded=True):
 
     with col3:
 
-        st.markdown('<div class="setup-section-title">Freios</div>', unsafe_allow_html=True)
+        titulo_setup_com_info("Freios")
         bal_freio = st.slider("Balanceamento Dianteiro", 50, 70, int(get_value("Balanceamento De Freios Dianteiro", 50)), step=1)
         press_freio = st.slider("Pressão dos Freios", 80, 100, int(get_value("Pressão Dos Freios", 95)))
 
-        st.markdown('<div class="setup-section-title">Pneus</div>', unsafe_allow_html=True)
+        titulo_setup_com_info("Pneus")
         press_dd = st.slider("Dianteiro Direito", 22.5, 29.5, float(get_value("Pressão Dianteiro Direito", 26.0)), step=0.5)
         press_de = st.slider("Dianteiro Esquerdo", 22.5, 29.5, float(get_value("Pressão Dianteiro Esquerdo", 26.0)), step=0.5)
         press_td = st.slider("Traseiro Direito", 20.5, 26.5, float(get_value("Pressão Traseiro Direito", 23.5)), step=0.5)
